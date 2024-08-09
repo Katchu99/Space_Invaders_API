@@ -45,13 +45,11 @@ export class UserController {
 
       const result = await this.model.login(username, password);
 
-      res
-        .status(result.success ? 200 : 401)
-        .json(
-          result.success
-            ? { success: result.success }
-            : { success: result.success, error: result.error }
-        );
+      if (result.success) {
+        res.status(200);
+      } else {
+        res.status(401).json({ error: result.error });
+      }
     } catch (err) {
       res.status(500).json({ error: `Failed to log in ${err}` });
     }

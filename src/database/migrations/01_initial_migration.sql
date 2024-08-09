@@ -1,5 +1,5 @@
 CREATE TABLE users (
-                      id TEXT PRIMARY KEY AUTOINCREMENT,
+                      id TEXT PRIMARY KEY,
                       username TEXT NOT NULL,
                       password TEXT NOT NULL
 );

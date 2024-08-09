@@ -14,9 +14,7 @@ const initialize = async () => {
   const userModel = new UserModel(db);
   const userController = new UserController(userModel);
 
-  app.post("/login", (req: Request, res: Response) => {
-    const { username, password } = req.body;
-  });
+  app.post("/login", (req, res) => userController.login(req, res));
 
   app.post("/register", (req, res) => userController.register(req, res));
 
