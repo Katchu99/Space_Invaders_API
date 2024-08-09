@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
-import bcrypt from "bcrypt";
 import { Database } from "sqlite";
 
 //User Database Operations
@@ -19,18 +17,15 @@ export class UserModel {
     }
   }
 
-  async register(username: string, password: string) {
-    const id = uuidv4();
-    const hashed_password = await bcrypt.hash(password, 10);
-
+  async register(id: string, username: string, password: string) {
     try {
       const result = await this.db.run(
         "INSERT INTO users (id, username, password) VALUES (?, ?, ?)",
         id,
         username,
-        hashed_password
+        password
       );
-      console.log("User registered:", result);
+      console.log("User registered:", username);
       return { success: true };
     } catch (err) {
       console.error("Register error:", err);
@@ -38,16 +33,29 @@ export class UserModel {
     }
   }
 
-  async login(username: string, password: string) {
-    const hashed_password = await this.db.get(
-      "SELECT password FROM users WHERE username=?",
+  //   async login(username: string) {
+  //     try {
+  //       const user = await this.findUserByUsername;
+  //       const match = await bcrypt.compare(password, user.password);
+  //       if (match) {
+  //         console.log("User logged-in:", username);
+  //         return { success: true };
+  //       } else {
+  //         return { success: false, error: "Password is not correct" };
+  //       }
+  //     } catch (err) {
+  //       console.error("Login error:", err);
+  //       return { success: false, error: err };
+  //     }
+  //   }
+
+  async findUserByUsername(
+    username: string
+  ): Promise<{ id: string; username: string; password: string }> {
+    const row = await this.db.get(
+      "SELECT id, username, password FROM users WHERE username=?",
       username
     );
-    const match = await bcrypt.compare(password, hashed_password);
-    if (match) {
-      return { success: true };
-    } else {
-      return { success: false, error: "Password is not correct" };
-    }
+    return row;
   }
 }

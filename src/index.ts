@@ -5,6 +5,7 @@ import { UserController } from "./controllers/user";
 
 const app = express();
 const port = 3000;
+var createError = require("http-errors");
 
 app.use(express.json());
 
@@ -14,9 +15,13 @@ const initialize = async () => {
   const userModel = new UserModel(db);
   const userController = new UserController(userModel);
 
-  app.post("/login", (req, res) => userController.login(req, res));
+  app.post("/login", (req: Request, res: Response) =>
+    userController.login(req, res)
+  );
 
-  app.post("/register", (req, res) => userController.register(req, res));
+  app.post("/register", (req: Request, res: Response) =>
+    userController.register(req, res)
+  );
 
   app.post("/setHighscore", (req: Request, res: Response) => {});
 

@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
 import { UserModel } from "../models/user";
+import jwt from "jsonwebtoken";
+import { v4 as uuidv4 } from "uuid";
+import bcrypt from "bcrypt";
 
 export class UserController {
   constructor(private model: UserModel) {}
@@ -20,19 +23,30 @@ export class UserController {
       const exists = await this.model.check_if_exists(username);
 
       if (exists) {
-        res.status(409).json({ error: "username already taken" });
+        return res.status(409).json({ error: "username already taken" }).end();
       }
 
-      const result = await this.model.register(username, password);
+      const id = uuidv4();
+      const hashed_password = await bcrypt.hash(password, 10);
+      const result = await this.model.register(id, username, hashed_password);
+
       if (result.success) {
-        res.status(201);
+        res.status(201).end();
       } else {
-        res.status(400).json({ error: result.error });
+        res.status(400).json({ error: result.error }).end();
       }
     } catch (err) {
-      res.status(500).json({ error: `Failed to register user: ${err}` });
+      res
+        .status(500)
+        .json({ error: `Failed to register user: ${err}` })
+        .end();
     }
   }
+
+  generateToken = (userId: string) => {
+    const secret = process.env.JWT_SECRET as string;
+    return jwt.sign({ id: userId }, secret, { expiresIn: "14d" });
+  };
 
   async login(req: Request, res: Response) {
     try {
@@ -43,15 +57,16 @@ export class UserController {
         return res.status(404).json({ error: "User does not exist" });
       }
 
-      const result = await this.model.login(username, password);
-
-      if (result.success) {
-        res.status(200);
-      } else {
-        res.status(401).json({ error: result.error });
-      }
+      const user = await this.model.findUserByUsername(username);
+      const match = await bcrypt.compare(password, user.password);
+      res
+        .status(match ? 200 : 401)
+        .json(match ? {} : { error: "Password is not correct" });
     } catch (err) {
-      res.status(500).json({ error: `Failed to log in ${err}` });
+      res
+        .status(500)
+        .json({ error: `Failed to log in ${err}` })
+        .end();
     }
   }
 }
