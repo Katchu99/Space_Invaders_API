@@ -110,3 +110,5 @@ jspm_packages/
 # Production
 build/
 
+# SQLite DB
+database.sqlite

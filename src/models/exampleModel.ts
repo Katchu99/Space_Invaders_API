@@ -1,6 +1,6 @@
 import { Database } from "sqlite";
 
-export class dbModel {
+export class ExampleModel {
   constructor(private db: Database) {}
 
   async getAllExamples() {
