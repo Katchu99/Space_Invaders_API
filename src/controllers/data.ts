@@ -1,24 +1,24 @@
-import { Request, Response } from "express";
-import { dbModel } from "../models/exampleModel";
+// import { Request, Response } from "express";
+// import { DataModel } from "../models/user";
 
-export class ExampleController {
-  constructor(private model: dbModel) {}
+// export class DataController {
+//   constructor(private model: DataModel) {}
 
-  async getExamples(req: Request, res: Response) {
-    try {
-      const examples = await this.model.getAllExamples();
-      res.json(examples);
-    } catch (err) {
-      res.status(500).json({ error: "Failed to fetch examples" });
-    }
-  }
+//   async check_if_exists(req: Request, res: Response) {
+//     try {
+//       const exists = await this.model.check_if_exists(req.body.username);
+//       res.json(examples);
+//     } catch (err) {
+//       res.status(500).json({ error: "Failed to fetch examples" });
+//     }
+//   }
 
-  async createExample(req: Request, res: Response) {
-    try {
-      const newExample = await this.model.createExample(req.body);
-      res.status(201).json(newExample);
-    } catch (err) {
-      res.status(500).json({ error: "Failed to create example" });
-    }
-  }
-}
+//   async createExample(req: Request, res: Response) {
+//     try {
+//       const newExample = await this.model.createExample(req.body);
+//       res.status(201).json(newExample);
+//     } catch (err) {
+//       res.status(500).json({ error: "Failed to create example" });
+//     }
+//   }
+// }
