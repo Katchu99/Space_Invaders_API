@@ -1,31 +1,16 @@
 import express, { Request, Response } from "express";
 import { initDb } from "./database/db";
-import { UserModel } from "./models/user";
-import { UserController } from "./controllers/user";
+import router from "./routes";
 
 const app = express();
 const port = 3000;
-var createError = require("http-errors");
 
 app.use(express.json());
 
 const initialize = async () => {
   const db = await initDb();
 
-  const userModel = new UserModel(db);
-  const userController = new UserController(userModel);
-
-  app.post("/login", (req: Request, res: Response) =>
-    userController.login(req, res)
-  );
-
-  app.post("/register", (req: Request, res: Response) =>
-    userController.register(req, res)
-  );
-
-  app.post("/setHighscore", (req: Request, res: Response) => {});
-
-  app.get("/getHighscore", (req: Request, res: Response) => {});
+  app.use("/", router(db));
 
   app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
