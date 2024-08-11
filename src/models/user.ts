@@ -33,23 +33,7 @@ export class UserModel {
     }
   }
 
-  //   async login(username: string) {
-  //     try {
-  //       const user = await this.findUserByUsername;
-  //       const match = await bcrypt.compare(password, user.password);
-  //       if (match) {
-  //         console.log("User logged-in:", username);
-  //         return { success: true };
-  //       } else {
-  //         return { success: false, error: "Password is not correct" };
-  //       }
-  //     } catch (err) {
-  //       console.error("Login error:", err);
-  //       return { success: false, error: err };
-  //     }
-  //   }
-
-  async findUserByUsername(
+  async getUserByUsername(
     username: string
   ): Promise<{ id: string; username: string; password: string }> {
     const row = await this.db.get(
