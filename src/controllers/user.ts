@@ -3,6 +3,9 @@ import { UserModel } from "../models/user";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export class UserController {
   constructor(private model: UserModel) {}
@@ -57,11 +60,24 @@ export class UserController {
         return res.status(404).json({ error: "User does not exist" });
       }
 
-      const user = await this.model.findUserByUsername(username);
+      const user = await this.model.getUserByUsername(username);
       const match = await bcrypt.compare(password, user.password);
-      res
-        .status(match ? 200 : 401)
-        .json(match ? {} : { error: "Password is not correct" });
+
+      if (match) {
+        const token = this.generateToken(user.id);
+        res
+          .status(200)
+          .cookie("token", token, {
+            httpOnly: true,
+          })
+          .end();
+      } else {
+        res.status(401).json({ error: "Password incorrect" }).end();
+      }
+
+      // res
+      //   .status(match ? 200 : 401)
+      //   .json(match ? {} : { error: "Password is not correct" });
     } catch (err) {
       res
         .status(500)
