@@ -4,7 +4,7 @@ CREATE TABLE users (
                       password TEXT NOT NULL
 );
 
-CREATE TABLE highscores (
+CREATE TABLE topHighscores (
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                             user_id INTEGER NOT NULL,
                             highscore INTEGER NOT NULL,
