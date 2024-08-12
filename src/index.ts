@@ -1,11 +1,13 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import { initDb } from "./database/db";
 import router from "./routes";
 
 const app = express();
 const port = 3000;
+const cookieParser = require("cookie-parser");
 
 app.use(express.json());
+app.use(cookieParser());
 
 const initialize = async () => {
   const db = await initDb();
