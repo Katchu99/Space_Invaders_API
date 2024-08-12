@@ -14,8 +14,12 @@ export default (router: express.Router, db: any) => {
     userController.register(req, res)
   );
 
-  router.post("/auth/refresh", (req: Request, res: Response) =>
-    userController.refresh(req, res)
+  router.post(
+    "/auth/refresh",
+    (
+      req: Request,
+      res: Response //is POST because its accessed with a res.redirect(307, "/auth/refresh")
+    ) => userController.refresh(req, res)
   );
 
   router.post("/auth/logout", (req: Request, res: Response) => {});
