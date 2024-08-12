@@ -46,9 +46,9 @@ export class UserController {
     }
   }
 
-  generateToken = (userId: string) => {
+  generateToken = (userId: string, expiration: string) => {
     const secret = process.env.JWT_SECRET as string;
-    return jwt.sign({ id: userId }, secret, { expiresIn: "14d" });
+    return jwt.sign({ id: userId }, secret, { expiresIn: expiration });
   };
 
   async login(req: Request, res: Response) {
@@ -64,11 +64,17 @@ export class UserController {
       const match = await bcrypt.compare(password, user.password);
 
       if (match) {
-        const token = this.generateToken(user.id);
+        const accessToken = this.generateToken(user.id, "15min");
+        const refreshToken = this.generateToken(user.id, "7d");
         res
           .status(200)
-          .cookie("token", token, {
+          .cookie("accessToken", accessToken, {
             httpOnly: true,
+            sameSite: "strict",
+          })
+          .cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            sameSite: "strict",
           })
           .end();
       } else {
@@ -84,5 +90,28 @@ export class UserController {
         .json({ error: `Failed to log in ${err}` })
         .end();
     }
+  }
+
+  async refresh(req: Request, res: Response) {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).end();
+    }
+    const secret = process.env.JWT_SECRET as string;
+    jwt.verify(refreshToken, secret, (err: any, payload: any) => {
+      if (err) {
+        return res.status(401).end();
+      }
+      const accessToken = this.generateToken(payload.id, "15min");
+      const redirectPath = req.query.redirect;
+
+      res
+        .status(200)
+        .cookie("accessToken", accessToken, {
+          httpOnly: true,
+          sameSite: "strict",
+        })
+        .redirect(String(redirectPath) || "/");
+    });
   }
 }
