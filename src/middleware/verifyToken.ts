@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { CustomRequest } from "../types/types";
 
@@ -7,7 +7,7 @@ export const verifyToken = (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies.token;
+  const token = req.cookies.accessToken;
   const secretKey = process.env.JWT_SECRET as string;
 
   if (!token) {
@@ -16,9 +16,12 @@ export const verifyToken = (
 
   jwt.verify(token, secretKey, (err: any, payload: any) => {
     if (err) {
-      return res.status(403).send("Invalid Token");
+      const originalUrl = req.originalUrl;
+      return res.redirect(
+        `/auth/refresh?redirect=${encodeURIComponent(originalUrl)}`
+      );
     }
-    req.userId = payload.id;
+    req.userId = payload.id; // get userId from token payload
     next();
   });
 };
