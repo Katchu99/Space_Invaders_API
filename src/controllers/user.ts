@@ -13,6 +13,7 @@ export class UserController {
   /* STATUS CODES:
         200 OK
         201 Created
+        307 Temporary Redirect
         400 Bad Request
         401 Unauthorized
         404 Not Found
