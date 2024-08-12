@@ -47,8 +47,13 @@ export class UserController {
   }
 
   generateToken = (userId: string, expiration: string) => {
-    const secret = process.env.JWT_SECRET as string;
-    return jwt.sign({ id: userId }, secret, { expiresIn: expiration });
+    try {
+      const secret = process.env.JWT_SECRET as string;
+      return jwt.sign({ id: userId }, secret, { expiresIn: expiration });
+    } catch (err) {
+      console.log(`Error generating token: ${err}`);
+      return null;
+    }
   };
 
   async login(req: Request, res: Response) {
@@ -65,7 +70,7 @@ export class UserController {
 
       if (match) {
         const accessToken = this.generateToken(user.id, "15min");
-        const refreshToken = this.generateToken(user.id, "7d");
+        const refreshToken = this.generateToken(user.id, "23h");
         res
           .status(200)
           .cookie("accessToken", accessToken, {
@@ -93,25 +98,58 @@ export class UserController {
   }
 
   async refresh(req: Request, res: Response) {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) {
-      return res.status(401).end();
-    }
-    const secret = process.env.JWT_SECRET as string;
-    jwt.verify(refreshToken, secret, (err: any, payload: any) => {
-      if (err) {
-        return res.status(401).end();
-      }
-      const accessToken = this.generateToken(payload.id, "15min");
+    try {
+      const tokenType = req.query.token;
       const redirectPath = req.query.redirect;
+      const refreshToken = req.cookies.refreshToken;
 
-      res
-        .status(200)
-        .cookie("accessToken", accessToken, {
-          httpOnly: true,
-          sameSite: "strict",
-        })
-        .redirect(String(redirectPath) || "/");
-    });
+      if (!refreshToken) {
+        return res.status(401);
+      }
+
+      if (tokenType == "refreshToken") {
+        const payload = jwt.decode(refreshToken);
+        if (payload && typeof payload === "object") {
+          var userId = payload.id;
+        } else {
+          return res.status(401);
+        }
+
+        const newRefreshToken = this.generateToken(userId, "7d");
+
+        if (!newRefreshToken) {
+          return res.status(401).send("Could not generate new refreshToken");
+        }
+
+        return res
+          .status(200)
+          .cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            sameSite: "strict",
+          })
+          .redirect(307, String(redirectPath));
+      } else if (tokenType == "accessToken") {
+        const secret = process.env.JWT_SECRET as string;
+
+        jwt.verify(refreshToken, secret, (err: any, payload: any) => {
+          if (err) {
+            return res.status(401);
+          } else {
+            const accessToken = this.generateToken(payload.id, "15min");
+
+            return res
+              .cookie("accessToken", accessToken, {
+                httpOnly: true,
+                sameSite: "strict",
+              })
+              .redirect(307, String(redirectPath));
+          }
+        });
+      } else {
+        return res.status(401);
+      }
+    } catch (err) {
+      return res.status(500).json({ error: `Failed to refresh Token: ${err}` });
+    }
   }
 }
