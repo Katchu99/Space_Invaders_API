@@ -13,4 +13,10 @@ export default (router: express.Router, db: any) => {
   router.post("/auth/register", (req: Request, res: Response) =>
     userController.register(req, res)
   );
+
+  router.post("/auth/refresh", (req: Request, res: Response) =>
+    userController.refresh(req, res)
+  );
+
+  router.post("/auth/logout", (req: Request, res: Response) => {});
 };
