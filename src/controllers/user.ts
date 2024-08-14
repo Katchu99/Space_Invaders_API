@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
+import { CustomRequest } from "../types/types";
 
 dotenv.config();
 
@@ -98,7 +99,7 @@ export class UserController {
     }
   }
 
-  async refresh(req: Request, res: Response) {
+  async refresh(req: CustomRequest, res: Response) {
     try {
       const tokenType = req.query.token;
       const redirectPath = req.query.redirect;
@@ -108,12 +109,12 @@ export class UserController {
         return res.status(401);
       }
 
+      //refreshToken
       if (tokenType == "refreshToken") {
-        const payload = jwt.decode(refreshToken);
-        if (payload && typeof payload === "object") {
-          var userId = payload.id;
-        } else {
-          return res.status(401);
+        var userId = req.userId;
+
+        if (!userId) {
+          return res.status(401).send("Invalid token. Please log-in.");
         }
 
         const newRefreshToken = this.generateToken(userId, "7d");
@@ -129,6 +130,8 @@ export class UserController {
             sameSite: "strict",
           })
           .redirect(307, String(redirectPath));
+
+        //accessToken
       } else if (tokenType == "accessToken") {
         const secret = process.env.JWT_SECRET as string;
 
@@ -152,5 +155,18 @@ export class UserController {
     } catch (err) {
       return res.status(500).json({ error: `Failed to refresh Token: ${err}` });
     }
+  }
+
+  async logout(req: Request, res: Response) {
+    const accessToken = req.cookies.accessToken;
+    const refreshToken = req.cookies.refreshToken;
+    // await addTokenToBlacklist(accessToken, "accessToken");
+    // await addTokenToBlacklist(refreshToken, "refreshToken");
+
+    return res
+      .status(200)
+      .clearCookie("accessToken")
+      .clearCookie("refreshToken")
+      .end();
   }
 }
