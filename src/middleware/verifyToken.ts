@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { CustomRequest } from "../types/types";
+import { isTokenBlacklisted } from "../utils/cache";
 
 export const verifyAccessToken = (
   req: CustomRequest,
@@ -8,37 +9,31 @@ export const verifyAccessToken = (
   next: NextFunction
 ) => {
   const accessToken = req.cookies.accessToken;
+
+  isTokenBlacklisted(accessToken).then((blacklisted) => {
+    if (blacklisted) {
+      return res.status(401).send("Invalid token. Please log-in.");
+    }
+  });
+
   const secretKey = process.env.JWT_SECRET as string;
 
   if (!accessToken) {
     return res.status(401).send("No token found. Please log-in.");
   }
 
-  // Get payload first to set userId
-  const decodedPayload = jwt.decode(accessToken);
-
-  if (decodedPayload && typeof decodedPayload === "object") {
-    req.userId = decodedPayload.id;
-
-    // Verify accessToken
-    jwt.verify(accessToken, secretKey, (err: any, payload: any) => {
-      if (err) {
-        if (!req.userId) {
-          return res.status(500).json({ error: "User not found" });
-        }
-
-        const originalUrl = req.originalUrl;
-        return res.redirect(
-          307,
-          `/auth/refresh?redirect=${encodeURIComponent(originalUrl)}&token=accessToken`
-        );
-      }
-      req.userId = payload.id; // get userId from token payload
-      next();
-    });
-  } else {
-    return res.status(401).send("Invalid token. Please log-in.");
-  }
+  // Verify accessToken
+  jwt.verify(accessToken, secretKey, (err: any, payload: any) => {
+    if (err) {
+      const originalUrl = req.originalUrl;
+      return res.redirect(
+        307,
+        `/auth/refresh?redirect=${encodeURIComponent(originalUrl)}&token=accessToken`
+      );
+    }
+    req.userId = payload.id; // get userId from token payload
+    next();
+  });
 };
 
 export const verifyRefreshToken = (
@@ -47,6 +42,13 @@ export const verifyRefreshToken = (
   next: NextFunction
 ) => {
   const refreshToken = req.cookies.refreshToken;
+
+  isTokenBlacklisted(refreshToken).then((blacklisted) => {
+    if (blacklisted) {
+      return res.status(401).send("Invalid token. Please log-in.");
+    }
+  });
+
   const secretKey = process.env.JWT_SECRET as string;
 
   jwt.verify(
@@ -56,7 +58,7 @@ export const verifyRefreshToken = (
     (err: any, payload: any) => {
       //so the actual id and/or exp is inside another nested payload. So access it like payload.payload.id
       if (err) {
-        return res.status(401);
+        return res.status(401).send("Invalid token. Please log-in.");
       }
 
       req.userId = payload.payload.id;
@@ -68,7 +70,7 @@ export const verifyRefreshToken = (
         const originalUrl = req.originalUrl;
 
         if (!req.userId) {
-          return res.status(500).json({ error: "User not found" });
+          return res.status(401).send("Invalid token. Please log-in.");
         }
 
         return res.redirect(
