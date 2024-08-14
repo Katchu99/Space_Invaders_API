@@ -22,5 +22,7 @@ export default (router: express.Router, db: any) => {
     ) => userController.refresh(req, res)
   );
 
-  router.post("/auth/logout", (req: Request, res: Response) => {});
+  router.get("/auth/logout", (req: Request, res: Response) =>
+    userController.logout(req, res)
+  );
 };
