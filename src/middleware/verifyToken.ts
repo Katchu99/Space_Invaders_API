@@ -1,7 +1,7 @@
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { CustomRequest } from "../types/types";
-import { isTokenBlacklisted } from "../utils/cache";
+// import { isTokenBlacklisted } from "../utils/cache";
 
 export const verifyAccessToken = (
   req: CustomRequest,
@@ -10,11 +10,11 @@ export const verifyAccessToken = (
 ) => {
   const accessToken = req.cookies.accessToken;
 
-  isTokenBlacklisted(accessToken).then((blacklisted) => {
-    if (blacklisted) {
-      return res.status(401).send("Invalid token. Please log-in.");
-    }
-  });
+  // isTokenBlacklisted(accessToken).then((blacklisted) => {
+  //   if (blacklisted) {
+  //     return res.status(401).send("Invalid token. Please log-in.");
+  //   }
+  // });
 
   const secretKey = process.env.JWT_SECRET as string;
 
@@ -43,11 +43,11 @@ export const verifyRefreshToken = (
 ) => {
   const refreshToken = req.cookies.refreshToken;
 
-  isTokenBlacklisted(refreshToken).then((blacklisted) => {
-    if (blacklisted) {
-      return res.status(401).send("Invalid token. Please log-in.");
-    }
-  });
+  // isTokenBlacklisted(refreshToken).then((blacklisted) => {
+  //   if (blacklisted) {
+  //     return res.status(401).send("Invalid token. Please log-in.");
+  //   }
+  // });
 
   const secretKey = process.env.JWT_SECRET as string;
 
