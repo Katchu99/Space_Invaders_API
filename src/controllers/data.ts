@@ -1,24 +1,31 @@
-// import { Request, Response } from "express";
-// import { DataModel } from "../models/user";
+import { Response } from "express";
+import { DataModel } from "../models/data";
+import { CustomRequest } from "../types/types";
 
-// export class DataController {
-//   constructor(private model: DataModel) {}
+export class DataController {
+  constructor(private model: DataModel) {}
 
-//   async check_if_exists(req: Request, res: Response) {
-//     try {
-//       const exists = await this.model.check_if_exists(req.body.username);
-//       res.json(examples);
-//     } catch (err) {
-//       res.status(500).json({ error: "Failed to fetch examples" });
-//     }
-//   }
+  async setHighscore(req: CustomRequest, res: Response) {
+    try {
+      const score = req.body;
+      const userId = req.userId;
 
-//   async createExample(req: Request, res: Response) {
-//     try {
-//       const newExample = await this.model.createExample(req.body);
-//       res.status(201).json(newExample);
-//     } catch (err) {
-//       res.status(500).json({ error: "Failed to create example" });
-//     }
-//   }
-// }
+      if (!userId || !score) {
+        return res.status(400).json({ error: "Invalid request" }).end();
+      }
+      const result = await this.model.setHighscore(userId, score);
+
+      if (result.success) {
+        res.status(200).end();
+      } else {
+        res.status(400).json({ error: result.error }).end();
+      }
+    } catch (err) {
+      console.log(`Error setting highscore: ${err}`);
+      res
+        .status(500)
+        .json({ error: `Failed to set highscore: ${err}` })
+        .end();
+    }
+  }
+}

@@ -1,28 +1,18 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import { initDb } from "./database/db";
-import { UserModel } from "./models/user";
-import { UserController } from "./controllers/user";
+import router from "./routes";
 
 const app = express();
 const port = 3000;
+const cookieParser = require("cookie-parser");
 
 app.use(express.json());
+app.use(cookieParser());
 
 const initialize = async () => {
   const db = await initDb();
 
-  const userModel = new UserModel(db);
-  const userController = new UserController(userModel);
-
-  app.post("/login", (req: Request, res: Response) => {
-    const { username, password } = req.body;
-  });
-
-  app.post("/register", (req, res) => userController.register(req, res));
-
-  app.post("/setHighscore", (req: Request, res: Response) => {});
-
-  app.get("/getHighscore", (req: Request, res: Response) => {});
+  app.use("/", router(db));
 
   app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

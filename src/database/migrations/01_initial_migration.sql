@@ -1,10 +1,10 @@
 CREATE TABLE users (
-                      id TEXT PRIMARY KEY AUTOINCREMENT,
+                      id TEXT PRIMARY KEY,
                       username TEXT NOT NULL,
                       password TEXT NOT NULL
 );
 
-CREATE TABLE highscores (
+CREATE TABLE topHighscores (
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                             user_id INTEGER NOT NULL,
                             highscore INTEGER NOT NULL,
@@ -14,6 +14,6 @@ CREATE TABLE highscores (
 CREATE TABLE personalHighscore (
                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                                    user_id INTEGER NOT NULL,
-                                   highscore INTEGER NOT NULL,
+                                   highscore TEXT NOT NULL,
                                    FOREIGN KEY (user_id) REFERENCES user(id)
 );
