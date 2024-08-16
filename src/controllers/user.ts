@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
 import { UserModel } from "../models/user";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import { CustomRequest } from "../types/types";
+import { addTokenToBlacklist } from "../utils/tokenBlacklist";
+import { jwtDecode } from "jwt-decode";
 
 dotenv.config();
 
@@ -111,13 +113,14 @@ export class UserController {
 
       //refreshToken
       if (tokenType == "refreshToken") {
-        var userId = req.userId;
+        const payload = jwtDecode<JwtPayload>(refreshToken);
+        req.userId = payload.id;
 
-        if (!userId) {
+        if (!req.userId) {
           return res.status(401).send("Invalid token. Please log-in.");
         }
 
-        const newRefreshToken = this.generateToken(userId, "7d");
+        const newRefreshToken = this.generateToken(req.userId, "7d");
 
         if (!newRefreshToken) {
           return res.status(401).send("Could not generate new refreshToken");
@@ -133,8 +136,14 @@ export class UserController {
 
         //accessToken
       } else if (tokenType == "accessToken") {
-        const secret = process.env.JWT_SECRET as string;
+        const payload = jwtDecode<JwtPayload>(refreshToken);
+        req.userId = payload.id;
 
+        if (!req.userId) {
+          return res.status(401).send("Invalid token. Please log-in.");
+        }
+
+        const secret = process.env.JWT_SECRET as string;
         jwt.verify(refreshToken, secret, (err: any, payload: any) => {
           if (err) {
             return res.status(401);
@@ -160,9 +169,19 @@ export class UserController {
   async logout(req: Request, res: Response) {
     const accessToken = req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
-    // await addTokenToBlacklist(accessToken, "accessToken");
-    // await addTokenToBlacklist(refreshToken, "refreshToken");
 
+    if (!accessToken || !refreshToken) {
+      return res
+        .status(401)
+        .clearCookie("accessToken")
+        .clearCookie("refreshToken")
+        .end();
+    }
+
+    const tokensToBlacklist = new Map<string, number>();
+    tokensToBlacklist.set(accessToken, 1200); // 20 minutes
+    tokensToBlacklist.set(refreshToken, 648000); // 7.5 days
+    addTokenToBlacklist(tokensToBlacklist);
     return res
       .status(200)
       .clearCookie("accessToken")

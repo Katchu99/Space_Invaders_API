@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { CustomRequest } from "../types/types";
+import { isTokenBlacklisted } from "../utils/tokenBlacklist";
 // import { isTokenBlacklisted } from "../utils/cache";
 
 export const verifyAccessToken = (
@@ -10,30 +11,41 @@ export const verifyAccessToken = (
 ) => {
   const accessToken = req.cookies.accessToken;
 
-  // isTokenBlacklisted(accessToken).then((blacklisted) => {
-  //   if (blacklisted) {
-  //     return res.status(401).send("Invalid token. Please log-in.");
-  //   }
-  // });
-
-  const secretKey = process.env.JWT_SECRET as string;
-
   if (!accessToken) {
-    return res.status(401).send("No token found. Please log-in.");
+    return res.status(401).send("Invalid token. Please log-in.");
   }
 
-  // Verify accessToken
-  jwt.verify(accessToken, secretKey, (err: any, payload: any) => {
-    if (err) {
-      const originalUrl = req.originalUrl;
-      return res.redirect(
-        307,
-        `/auth/refresh?redirect=${encodeURIComponent(originalUrl)}&token=accessToken`
-      );
+  isTokenBlacklisted(accessToken).then((blacklisted) => {
+    if (blacklisted) {
+      return res.status(401).send("Invalid token. Please log-in.");
     }
-    req.userId = payload.id; // get userId from token payload
-    next();
+
+    verifyToken(req, res, next);
   });
+
+  function verifyToken(req: CustomRequest, res: Response, next: NextFunction) {
+    const secretKey = process.env.JWT_SECRET as string;
+
+    // Verify accessToken
+    jwt.verify(accessToken, secretKey, (err: any, payload: any) => {
+      if (err) {
+        const originalUrl = req.originalUrl;
+        return res.redirect(
+          307,
+          `/auth/refresh?redirect=${encodeURIComponent(originalUrl)}&token=accessToken`
+        );
+      }
+
+      req.userId = payload.id; // get userId from token payload
+
+      if (!req.userId) {
+        // Every Token created by this API will have the userId in the payload
+        return res.status(401).send("Invalid token. Please log-in.");
+      }
+
+      next();
+    });
+  }
 };
 
 export const verifyRefreshToken = (
@@ -43,42 +55,50 @@ export const verifyRefreshToken = (
 ) => {
   const refreshToken = req.cookies.refreshToken;
 
-  // isTokenBlacklisted(refreshToken).then((blacklisted) => {
-  //   if (blacklisted) {
-  //     return res.status(401).send("Invalid token. Please log-in.");
-  //   }
-  // });
+  if (!refreshToken) {
+    return res.status(401).send("Invalid token. Please log-in.");
+  }
 
-  const secretKey = process.env.JWT_SECRET as string;
+  isTokenBlacklisted(refreshToken).then((blacklisted) => {
+    if (blacklisted) {
+      return res.status(401).send("Invalid token. Please log-in.");
+    }
 
-  jwt.verify(
-    refreshToken,
-    secretKey,
-    { complete: true },
-    (err: any, payload: any) => {
-      //so the actual id and/or exp is inside another nested payload. So access it like payload.payload.id
-      if (err) {
-        return res.status(401).send("Invalid token. Please log-in.");
-      }
+    verifyToken(req, res, next);
+  });
 
-      req.userId = payload.payload.id;
+  function verifyToken(req: CustomRequest, res: Response, next: NextFunction) {
+    const secretKey = process.env.JWT_SECRET as string;
 
-      const expiresAt = payload.payload.exp * 1000; //convert from seconds to milliseconds
-      const remainingTime = expiresAt - Date.now(); //because Date.now() is in milliseconds
-      if (remainingTime < 86400000) {
-        // 86400000 refers to 24 hours in milliseconds
-        const originalUrl = req.originalUrl;
+    jwt.verify(
+      refreshToken,
+      secretKey,
+      { complete: true },
+      (err: any, payload: any) => {
+        //so the actual id and/or exp is inside another nested payload. So access it like payload.payload.id
+        if (err) {
+          return res.status(401).send("Invalid token. Please log-in.");
+        }
+
+        req.userId = payload.payload.id;
 
         if (!req.userId) {
           return res.status(401).send("Invalid token. Please log-in.");
         }
 
-        return res.redirect(
-          307,
-          `/auth/refresh?redirect=${encodeURIComponent(originalUrl)}&token=refreshToken`
-        );
+        const expiresAt = payload.payload.exp * 1000; //convert from seconds to milliseconds
+        const remainingTime = expiresAt - Date.now(); //because Date.now() returns in milliseconds
+        if (remainingTime < 86400000) {
+          // 86400000 refers to 24 hours in milliseconds
+          const originalUrl = req.originalUrl;
+
+          return res.redirect(
+            307,
+            `/auth/refresh?redirect=${encodeURIComponent(originalUrl)}&token=refreshToken`
+          );
+        }
+        next();
       }
-      next();
-    }
-  );
+    );
+  }
 };
