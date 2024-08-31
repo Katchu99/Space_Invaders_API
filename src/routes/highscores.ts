@@ -12,7 +12,18 @@ export default (router: express.Router, db: any) => {
   const dataModel = new DataModel(db);
   const dataController = new DataController(dataModel);
 
-  router.get("/highscores/get", (req: CustomRequest, res: Response) => {});
+  router.get(
+    "/highscores/personal/get",
+    verifyAccessToken,
+    verifyRefreshToken,
+    (req: CustomRequest, res: Response) =>
+      dataController.getPersonalHighscore(req, res)
+  );
+
+  router.get("/highscores/top/get", (req: CustomRequest, res: Response) =>
+    dataController.getPersonalHighscore(req, res)
+  );
+
   router.post(
     "/highscores/set",
     verifyAccessToken,
