@@ -52,10 +52,18 @@ The API uses a SQLite database to store user data and high scores.
 
 ## Getting Started
 
-1. Clone the repository: `git clone https://github.com/your-username/space-invaders-api.git`
-2. Install dependencies: `npm install`
-3. Start the server: `npm start`
-4. Open a web browser and navigate to `http://localhost:3000`
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/space-invaders-api.git
+   ```
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+5. Start the server:
+   ```bash
+   npm start
+   ```
 
 ## API Documentation
 
